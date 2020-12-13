@@ -37,15 +37,33 @@ class World():
         self.tile_list = []
     
         dirt_img = pygame.image.load('assets/dirt.png')
+        grass_img = pygame.image.load('assets/grass.png')
         
         row_count = 0
         for row in data:
             col_count = 0
             for tile in row:
+                
+                # si es 1 entonces es bloque de tierra
                 if tile==1:
                 
                     # adaptamos el tamaño del assets a la cuadricula
                     img = pygame.transform.scale(dirt_img, (tile_size, tile_size))
+                    
+                    # asignamos la ubicaion del assets
+                    img_rect = img.get_rect()
+                    img_rect.x = col_count * tile_size
+                    img_rect.y = row_count * tile_size
+                    tile = (img, img_rect)
+                    
+                    # agregamos a la lista el objeto imagen ya configurado tamaño y posicion
+                    self.tile_list.append(tile)
+                
+                # si es 2 es bloque pasto
+                if tile==2:
+                
+                    # adaptamos el tamaño del assets a la cuadricula
+                    img = pygame.transform.scale(grass_img, (tile_size, tile_size))
                     
                     # asignamos la ubicaion del assets
                     img_rect = img.get_rect()
@@ -82,7 +100,7 @@ world_data = [
 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
 ]
 
 # Creamos el objeto mundo

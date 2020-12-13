@@ -1,4 +1,5 @@
 ﻿^1::
-run, "C:/Users/Pedro/Desktop/platformer/run.bat"
-^1::
-run, "C:/Users/Pedro/Desktop/platformer/runError.bat"
+run, "run.bat"
+return
+^2::
+run, "runError.bat"
