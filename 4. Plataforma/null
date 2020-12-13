@@ -1,0 +1,11 @@
+
+Haciendo ping a PEDROPC [::1] con 32 bytes de datos:
+Respuesta desde ::1: tiempo<1m 
+Respuesta desde ::1: tiempo<1m 
+Respuesta desde ::1: tiempo<1m 
+
+Estad¡sticas de ping para ::1:
+    Paquetes: enviados = 3, recibidos = 3, perdidos = 0
+    (0% perdidos),
+Tiempos aproximados de ida y vuelta en milisegundos:
+    M¡nimo = 0ms, M ximo = 0ms, Media = 0ms
