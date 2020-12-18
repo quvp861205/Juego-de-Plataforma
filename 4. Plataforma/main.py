@@ -3,6 +3,10 @@ from pygame.locals import *
 
 pygame.init()
 
+# limitar la cuadros por segundo
+clock = pygame.time.Clock()
+fps = 60
+
 # ancho y alto de la ventana del juego
 screen_width = 800
 screen_height = 800
@@ -32,13 +36,28 @@ def draw_grid():
 class Player():
     #carga la imagen del jugador
     def __init__(self, x, y):
-        img = pygame.image.load('assets/guy1.png')
-        self.image = pygame.transform.scale(img, (40,80))
+        self.images_right = []  # arreglo para imagenes monito caminando derecha
+        self.images_left = []  # arreglo para imagenes monito caminando izquierda
+        self.index = 0
+        self.counter = 0
+        
+        # llenamos el arreglo con imagenes caminando
+        for num in range(1,5):
+            print( 'assets/guy'+str(num)+'.png')
+            img_right = pygame.image.load('assets/guy'+str(num)+'.png')
+            img_right = pygame.transform.scale(img_right, (40,80))
+            img_left = pygame.transform.flip(img_right, True, False)
+            self.images_right.append(img_right)
+            self.images_left.append(img_left)
+        
+        self.image = self.images_right[self.index]
+
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
         self.vel_y = 0  #velocidad del salto
-        self.jumped = False
+        self.jumped = False  # el jugador esta brincnado?
+        self.direction = 0 # direccion del jugador izquierda o derecha
 
     # funcion: controla el jugador y lo dibuja
     def update(self):
@@ -46,16 +65,41 @@ class Player():
         # variables para el movimiento
         dx = 0
         dy = 0
+        walk_cooldown = 5  # cada 5 ciclos va cambiar animacion el jugador
         
         #controlamos al jugador
         key = pygame.key.get_pressed()
-        if key[pygame.K_SPACE] and self.jumped==False:
+        if key[pygame.K_SPACE] and self.jumped==False: # tecla espacio para salto
             self.vel_y = -15
             self.jumped = True
-        if key[pygame.K_LEFT]:
+        if key[pygame.K_LEFT]:  # tecla izquierda presionada
             dx -= 5
-        if key[pygame.K_RIGHT]:
+            self.counter += 1   # aumentamos para generar animacion
+            self.direction = -1   # cambiamos de direccion
+        
+        if key[pygame.K_RIGHT]: # tecla derecha presionada
             dx += 5
+            self.counter += 1   # aumentamos para generar animacion
+            self.direction = 1   # cambiamos de direccion
+            
+        if key[pygame.K_RIGHT]==False and key[pygame.K_LEFT]==False:  # si no presiona nada reiniciamos toda animacion
+            self.counter = 0
+            self.index = 0   
+            if self.direction==1:
+                self.image = self.images_right[self.index]
+            if self.direction==-1:
+                self.image = self.images_left[self.index]
+            
+        # manejo de animaciones
+        if self.counter > walk_cooldown:  # hacemos mas lento la animacion
+            self.counter = 0
+            self.index += 1
+            if self.index>=len(self.images_right):
+                self.index = 0
+            if self.direction==1:
+                self.image = self.images_right[self.index]
+            if self.direction==-1:
+                self.image = self.images_left[self.index]
         
         #agregamos gravedad
         self.vel_y +=1 # gravedad
@@ -69,6 +113,7 @@ class Player():
         self.rect.x += dx
         self.rect.y += dy
         
+        #verificamos que el jugador tenga limite inferior que es la ventana
         if self.rect.bottom>screen_height:
             self.rect.bottom = screen_height
             dy = 0
@@ -167,6 +212,9 @@ run = True
 
 while run==True:
     
+    #limitamos a 60 ciclos por segundo
+    clock.tick(fps)
+    
     # pinta el fondo
     screen.blit(bg_img, (0, 0))
     
@@ -179,6 +227,7 @@ while run==True:
     # pinta el grid
     draw_grid()
     
+    # pinta al jugador
     player.update()
     
     for event in pygame.event.get():
