@@ -24,13 +24,6 @@ pygame.display.set_caption('Platformer')
 sun_img = pygame.image.load('assets/sun.png')
 bg_img = pygame.image.load('assets/sky.png')
 
-# pinta una cuadricula separado por "tile_size"
-def draw_grid():
-
-    for line in range(0, 20):
-        #                          color linea  ,  punto incio       ,   punt final
-        pygame.draw.line(screen, (255, 255, 255), (0, line*tile_size), (screen_width, line*tile_size))
-        pygame.draw.line(screen, (255, 255, 255), (line*tile_size, 0), (line*tile_size, screen_height))
 
 # clase para administrar al jugador
 class Player():
@@ -43,7 +36,6 @@ class Player():
         
         # llenamos el arreglo con imagenes caminando
         for num in range(1,5):
-            print( 'assets/guy'+str(num)+'.png')
             img_right = pygame.image.load('assets/guy'+str(num)+'.png')
             img_right = pygame.transform.scale(img_right, (40,80))
             img_left = pygame.transform.flip(img_right, True, False)
@@ -55,6 +47,8 @@ class Player():
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
         self.vel_y = 0  #velocidad del salto
         self.jumped = False  # el jugador esta brincnado?
         self.direction = 0 # direccion del jugador izquierda o derecha
@@ -63,8 +57,8 @@ class Player():
     def update(self):
         
         # variables para el movimiento
-        dx = 0
-        dy = 0
+        dx = 0 #desplazamiento en x
+        dy = 0 #desplazamiento en y
         walk_cooldown = 5  # cada 5 ciclos va cambiar animacion el jugador
         
         #controlamos al jugador
@@ -72,6 +66,8 @@ class Player():
         if key[pygame.K_SPACE] and self.jumped==False: # tecla espacio para salto
             self.vel_y = -15
             self.jumped = True
+        if key[pygame.K_SPACE]==False: # si no se esta presionando se puede volver a brinbcar
+            self.jumped = False
         if key[pygame.K_LEFT]:  # tecla izquierda presionada
             dx -= 5
             self.counter += 1   # aumentamos para generar animacion
@@ -107,7 +103,21 @@ class Player():
             self.vel_y = 10
         dy += self.vel_y
         
-        #verificar colision
+        #verificar colision con el mundo
+        for tile in world.tile_list:
+            #verificar colision en x
+            if tile[1].colliderect(self.rect.x+dx, self.rect.y, self.width, self.height):
+                dx = 0
+            #verificar colision en y
+            if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
+                #verificar si hay terreno en la parte de debajo brincando
+                if self.vel_y<0:
+                    dy = tile[1].bottom - self.rect.top
+                    self.vel_y = 0
+                #verificar si hay terreno en la parte de arriba cayendo
+                elif self.vel_y>=0:
+                    dy = tile[1].top - self.rect.bottom
+                    self.vel_y = 0
         
         #actualizar coordenadas de jugador
         self.rect.x += dx
@@ -117,9 +127,12 @@ class Player():
         if self.rect.bottom>screen_height:
             self.rect.bottom = screen_height
             dy = 0
-            self.jumped = False
             
+        #pinta al jugador en pantalla
         screen.blit(self.image, self.rect)
+        
+        #pone un marco blanco alrededor del monito
+        pygame.draw.rect(screen, (255,255,255), self.rect, 2)
 
 # clase para pintar los assets del mapa
 class World():
@@ -174,6 +187,8 @@ class World():
     def draw(self):
         for tile in self.tile_list:
             screen.blit(tile[0], tile[1])
+            #pone un marco blanco alrededor de cada bloque de colision
+            pygame.draw.rect(screen, (255,255,255), tile[1], 2)
             
         
             
@@ -206,7 +221,7 @@ world_data = [
 world = World(world_data)
 
 # Creamos el objeto jugador
-player = Player(100, screen_height-120)
+player = Player(100, screen_height-200)
 
 run = True
 
@@ -223,9 +238,6 @@ while run==True:
     
     # pinta los bloques de tierra
     world.draw()
-    
-    # pinta el grid
-    draw_grid()
     
     # pinta al jugador
     player.update()
