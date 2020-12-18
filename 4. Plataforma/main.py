@@ -180,6 +180,12 @@ class World():
                     
                     # agregamos a la lista el objeto imagen ya configurado tamaño y posicion
                     self.tile_list.append(tile)
+                    
+                # si es 3 es bloque enemigo
+                if tile==3:
+                    blob = Enemy(col_count*tile_size, row_count * tile_size +5)
+                    blob_group.add(blob) #agregamos al grupo el enemigo
+                    
                 col_count += 1
             row_count += 1
     
@@ -190,6 +196,27 @@ class World():
             #pone un marco blanco alrededor de cada bloque de colision
             pygame.draw.rect(screen, (255,255,255), tile[1], 2)
             
+            
+# clase para el comportamiento de los enemigos
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load('assets/blob.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.move_direction = 1
+        self.move_counter = 0
+        
+    # actualizar comportamiento enemigos
+    def update(self):
+        self.rect.x += self.move_direction #movemos al enemigo
+        self.move_counter += 1  #contamos que tanto se ha movido
+        if abs(self.move_counter)>50: # cada 50 movimientos cambia direccion 
+            self.move_direction *= -1  #cambiamos direccion
+            self.move_counter *=  -1  
+        
+        
         
             
 # Mapa para indicar con 1 donde se va poner la imagen
@@ -217,11 +244,16 @@ world_data = [
 ]
 
 
+# creamos un arreglo para enemigos
+blob_group = pygame.sprite.Group()
+
 # Creamos el objeto mundo
 world = World(world_data)
 
 # Creamos el objeto jugador
 player = Player(100, screen_height-200)
+
+
 
 run = True
 
@@ -238,6 +270,10 @@ while run==True:
     
     # pinta los bloques de tierra
     world.draw()
+    
+    # pintamos al grupo de enemigos
+    blob_group.update()
+    blob_group.draw(screen)
     
     # pinta al jugador
     player.update()
