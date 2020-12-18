@@ -1,5 +1,5 @@
-﻿^1::
+﻿^a::
 run, "run.bat"
 return
-^2::
+^q::
 run, "runError.bat"

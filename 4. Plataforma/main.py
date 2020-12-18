@@ -28,6 +28,53 @@ def draw_grid():
         pygame.draw.line(screen, (255, 255, 255), (0, line*tile_size), (screen_width, line*tile_size))
         pygame.draw.line(screen, (255, 255, 255), (line*tile_size, 0), (line*tile_size, screen_height))
 
+# clase para administrar al jugador
+class Player():
+    #carga la imagen del jugador
+    def __init__(self, x, y):
+        img = pygame.image.load('assets/guy1.png')
+        self.image = pygame.transform.scale(img, (40,80))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.vel_y = 0  #velocidad del salto
+        self.jumped = False
+
+    # funcion: controla el jugador y lo dibuja
+    def update(self):
+        
+        # variables para el movimiento
+        dx = 0
+        dy = 0
+        
+        #controlamos al jugador
+        key = pygame.key.get_pressed()
+        if key[pygame.K_SPACE] and self.jumped==False:
+            self.vel_y = -15
+            self.jumped = True
+        if key[pygame.K_LEFT]:
+            dx -= 5
+        if key[pygame.K_RIGHT]:
+            dx += 5
+        
+        #agregamos gravedad
+        self.vel_y +=1 # gravedad
+        if self.vel_y > 10: #limite velocidad salto
+            self.vel_y = 10
+        dy += self.vel_y
+        
+        #verificar colision
+        
+        #actualizar coordenadas de jugador
+        self.rect.x += dx
+        self.rect.y += dy
+        
+        if self.rect.bottom>screen_height:
+            self.rect.bottom = screen_height
+            dy = 0
+            self.jumped = False
+            
+        screen.blit(self.image, self.rect)
 
 # clase para pintar los assets del mapa
 class World():
@@ -38,6 +85,8 @@ class World():
     
         dirt_img = pygame.image.load('assets/dirt.png')
         grass_img = pygame.image.load('assets/grass.png')
+        
+        
         
         row_count = 0
         for row in data:
@@ -111,6 +160,9 @@ world_data = [
 # Creamos el objeto mundo
 world = World(world_data)
 
+# Creamos el objeto jugador
+player = Player(100, screen_height-120)
+
 run = True
 
 while run==True:
@@ -127,7 +179,7 @@ while run==True:
     # pinta el grid
     draw_grid()
     
-    
+    player.update()
     
     for event in pygame.event.get():
         if event.type==pygame.QUIT:
