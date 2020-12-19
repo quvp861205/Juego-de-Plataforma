@@ -1,5 +1,5 @@
 # pygamexamples
-Crear un juego de plataformas con pygame
+Excersices with pygame
 
 	instalar python (instalar con pip)
 https://www.python.org/downloads/

@@ -24,38 +24,43 @@ pygame.display.set_caption('Platformer')
 # cargamos las imagenes del fondo de nubecitas y el sol
 sun_img = pygame.image.load('assets/sun.png')
 bg_img = pygame.image.load('assets/sky.png')
+restart_img = pygame.image.load('assets/restart_btn.png')
 
+
+# clase para agregar botones
+class Button():
+    def __init__(self, x, y, image):
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.clicked = False
+        
+    def draw(self):
+        action = False
+        
+        # obtenemos posicion del mouse
+        pos = pygame.mouse.get_pos()
+        
+        if self.rect.collidepoint(pos): # verificamos si esta sobre el boton
+            if pygame.mouse.get_pressed()[0]==1 and self.clicked==False: # verificamos si hace click izquierdo
+                self.clicked = True
+                action = True
+        
+        if pygame.mouse.get_pressed()[0]==0: # Soltar el click
+            self.clicked = False
+        
+        #pintamos el boton
+        screen.blit(self.image, self.rect) 
+        
+        return action
+        
 
 # clase para administrar al jugador
 class Player():
     #carga la imagen del jugador
     def __init__(self, x, y):
-        self.images_right = []  # arreglo para imagenes monito caminando derecha
-        self.images_left = []  # arreglo para imagenes monito caminando izquierda
-        self.index = 0
-        self.counter = 0
-        
-        # llenamos el arreglo con imagenes caminando
-        for num in range(1,5):
-            img_right = pygame.image.load('assets/guy'+str(num)+'.png')
-            img_right = pygame.transform.scale(img_right, (40,80))
-            img_left = pygame.transform.flip(img_right, True, False)
-            self.images_right.append(img_right)
-            self.images_left.append(img_left)
-        
-        #cargamos imagen de la muerte
-        self.dead_image = pygame.image.load('assets/ghost.png') 
-        
-        # configuramos la imagen del jugador
-        self.image = self.images_right[self.index] 
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        self.width = self.image.get_width()
-        self.height = self.image.get_height()
-        self.vel_y = 0  #velocidad del salto
-        self.jumped = False  # el jugador esta brincnado?
-        self.direction = 0 # direccion del jugador izquierda o derecha
+        self.reset(x, y) # inicializamos parametros del monito
 
     # funcion: controla el jugador y lo dibuja
     def update(self, game_over):
@@ -70,7 +75,7 @@ class Player():
         
             #controlamos al jugador
             key = pygame.key.get_pressed()
-            if key[pygame.K_SPACE] and self.jumped==False: # tecla espacio para salto
+            if key[pygame.K_SPACE] and self.jumped==False and self.in_air==False: # tecla espacio para salto, in_air evita que salte multiple veces
                 self.vel_y = -15
                 self.jumped = True
             if key[pygame.K_SPACE]==False: # si no se esta presionando se puede volver a brinbcar
@@ -111,6 +116,7 @@ class Player():
             dy += self.vel_y
             
             #verificar colision con el mundo
+            self.in_air = True
             for tile in world.tile_list:
                 #verificar colision en x
                 if tile[1].colliderect(self.rect.x+dx, self.rect.y, self.width, self.height):
@@ -125,6 +131,7 @@ class Player():
                     elif self.vel_y>=0:
                         dy = tile[1].top - self.rect.bottom
                         self.vel_y = 0
+                        self.in_air = False
             
             #verificar colision con enemigos
             if pygame.sprite.spritecollide(self, blob_group, False):
@@ -155,7 +162,36 @@ class Player():
         
         return game_over
         
-
+    # reiniciamos los parametros dl jugador porque perdio
+    def reset(self, x, y):
+        self.images_right = []  # arreglo para imagenes monito caminando derecha
+        self.images_left = []  # arreglo para imagenes monito caminando izquierda
+        self.index = 0
+        self.counter = 0
+        
+        # llenamos el arreglo con imagenes caminando
+        for num in range(1,5):
+            img_right = pygame.image.load('assets/guy'+str(num)+'.png')
+            img_right = pygame.transform.scale(img_right, (40,80))
+            img_left = pygame.transform.flip(img_right, True, False)
+            self.images_right.append(img_right)
+            self.images_left.append(img_left)
+        
+        #cargamos imagen de la muerte
+        self.dead_image = pygame.image.load('assets/ghost.png') 
+        
+        # configuramos la imagen del jugador
+        self.image = self.images_right[self.index] 
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        self.vel_y = 0  #velocidad del salto
+        self.jumped = False  # el jugador esta brincando?, para que tenga que soltar y presionar la tecla espacio
+        self.direction = 0 # direccion del jugador izquierda o derecha
+        self.in_air = True # esta brincando?, para que no haga saltos en el aire
+        
 # clase para pintar los assets del mapa
 class World():
 
@@ -288,9 +324,11 @@ blob_group = pygame.sprite.Group()
 # Creamos el objeto mundo
 world = World(world_data)
 
+# boton para reiniciar juego
+restart_button = Button(screen_width//2-50, screen_height//2+100, restart_img)
+
 # Creamos el objeto jugador
 player = Player(100, screen_height-200)
-
 
 
 run = True
@@ -320,6 +358,12 @@ while run==True:
     # pinta al jugador
     game_over = player.update(game_over)
     
+     # si hay game_over
+    if game_over==-1:
+        if restart_button.draw(): # usuario hizo click en boton restart
+            player.reset(100, screen_height-200) # volvemos a reiniciar
+            game_over = 0
+            
     for event in pygame.event.get():
         if event.type==pygame.QUIT:
             run = False
