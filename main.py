@@ -14,6 +14,7 @@ screen_height = 800
 # variables del juego
 tile_size = 40 # tamaño de la cuadricula en pixeles
 game_over = 0 # marca si es gameover
+main_menu = True
 
 # creamos el objeto pantalla
 screen = pygame.display.set_mode((screen_width, screen_height))
@@ -24,7 +25,9 @@ pygame.display.set_caption('Platformer')
 # cargamos las imagenes del fondo de nubecitas y el sol
 sun_img = pygame.image.load('assets/sun.png')
 bg_img = pygame.image.load('assets/sky.png')
-restart_img = pygame.image.load('assets/restart_btn.png')
+restart_img = pygame.image.load('assets/restart_btn.png')  # reiniciar el juego
+start_img = pygame.image.load('assets/start_btn.png') # iniciar por primera vez
+exit_img = pygame.image.load('assets/exit_btn.png') # salir del juego
 
 
 # clase para agregar botones
@@ -324,8 +327,11 @@ blob_group = pygame.sprite.Group()
 # Creamos el objeto mundo
 world = World(world_data)
 
-# boton para reiniciar juego
+# botones para el juego
 restart_button = Button(screen_width//2-50, screen_height//2+100, restart_img)
+start_button = Button(screen_width//2-350, screen_height//2+100, start_img)
+exit_button = Button(screen_width//2+150, screen_height//2+100, exit_img)
+
 
 # Creamos el objeto jugador
 player = Player(100, screen_height-200)
@@ -344,26 +350,37 @@ while run==True:
     # pinta el sol
     screen.blit(sun_img, (100, 100))
     
-    # pinta los bloques de tierra
-    world.draw()
-        
-    if game_over==0: # actualizamos enemigos si no hay game_over
-        blob_group.update()
-    # pintamos al grupo de enemigos
-    blob_group.draw(screen)
     
-    # pintamos la lava
-    lava_group.draw(screen)
+    # Validar si va mostrar el menu o el juego
+    if main_menu==True: # carga los botones de inicio
+        if exit_button.draw()==True:
+            run = False
+        if start_button.draw()==True:
+            main_menu = False
     
-    # pinta al jugador
-    game_over = player.update(game_over)
+    else: # empieza el juego        
     
-     # si hay game_over
-    if game_over==-1:
-        if restart_button.draw(): # usuario hizo click en boton restart
-            player.reset(100, screen_height-200) # volvemos a reiniciar
-            game_over = 0
+        # pinta los bloques de tierra
+        world.draw()
             
+        if game_over==0: # actualizamos enemigos si no hay game_over
+            blob_group.update()
+        # pintamos al grupo de enemigos
+        blob_group.draw(screen)
+        
+        # pintamos la lava
+        lava_group.draw(screen)
+        
+        # pinta al jugador
+        game_over = player.update(game_over)
+        
+         # si hay game_over
+        if game_over==-1:
+            if restart_button.draw(): # usuario hizo click en boton restart
+                player.reset(100, screen_height-200) # volvemos a reiniciar
+                game_over = 0
+    
+    
     for event in pygame.event.get():
         if event.type==pygame.QUIT:
             run = False
