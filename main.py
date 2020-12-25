@@ -1,6 +1,9 @@
 import pygame
 from pygame.locals import *
 
+import pickle
+from os import path
+
 pygame.init()
 
 # limitar la cuadros por segundo
@@ -15,6 +18,8 @@ screen_height = 800
 tile_size = 40 # tamaño de la cuadricula en pixeles
 game_over = 0 # marca si es gameover
 main_menu = True
+level = 0 # nivel al que vamos a jugar
+max_levels = 7
 
 # creamos el objeto pantalla
 screen = pygame.display.set_mode((screen_width, screen_height))
@@ -29,6 +34,21 @@ restart_img = pygame.image.load('assets/restart_btn.png')  # reiniciar el juego
 start_img = pygame.image.load('assets/start_btn.png') # iniciar por primera vez
 exit_img = pygame.image.load('assets/exit_btn.png') # salir del juego
 
+
+# permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
+def reset_level(level):
+    player.reset(100, screen_height-200)
+    blob_group.empty()
+    lava_group.empty()
+    exit_group.empty()
+    
+    if path.exists(f'level{level}_data'):
+        pickle_in = open(f'level{level}_data', 'rb')
+        world_data = pickle.load(pickle_in)
+    world = World(world_data)
+    
+    return world
+    
 
 # clase para agregar botones
 class Button():
@@ -142,7 +162,11 @@ class Player():
             
             #verificar colision con lava
             if pygame.sprite.spritecollide(self, lava_group, False):
-                game_over = -1            
+                game_over = -1 
+
+            #verificar colision con puerta de salida
+            if pygame.sprite.spritecollide(self, exit_group, False):
+                game_over = 1 
                 
             #actualizar coordenadas de jugador
             self.rect.x += dx
@@ -251,6 +275,11 @@ class World():
                 if tile==6:
                     lava = Lava(col_count*tile_size, row_count * tile_size+(tile_size//2))
                     lava_group.add(lava) #agregamos al grupo el bloque lava
+                
+                # si es 8 entonces es una puerta de salida de la mision
+                if tile==8:
+                    exit = Exit(col_count*tile_size, row_count * tile_size - (tile_size//2))
+                    exit_group.add(exit)
                     
                 col_count += 1
             row_count += 1
@@ -292,6 +321,16 @@ class Lava(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
+# clase que pinta una puerta para salir de la mision
+class Exit(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        img = pygame.image.load('assets/exit.png')
+        self.image = pygame.transform.scale(img, (tile_size, int(tile_size*1.5)))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+    
         
             
 # Mapa para indicar con 1 donde se va poner la imagen
@@ -324,7 +363,13 @@ lava_group = pygame.sprite.Group()
 # creamos un arreglo para enemigos
 blob_group = pygame.sprite.Group()
 
-# Creamos el objeto mundo
+# creamos un grupo de puertas para pasar al siguiente mision
+exit_group = pygame.sprite.Group()
+
+# Cargamos el nivel y creamos el mundo
+if path.exists(f'level{level}_data'):
+    pickle_in = open(f'level{level}_data', 'rb')
+    world_data = pickle.load(pickle_in)
 world = World(world_data)
 
 # botones para el juego
@@ -371,16 +416,38 @@ while run==True:
         # pintamos la lava
         lava_group.draw(screen)
         
+        # pintamos la puerta de salida de la mision
+        exit_group.draw(screen)
+        
         # pinta al jugador
         game_over = player.update(game_over)
         
-         # si hay game_over
+           
+         # si hay game_over ha muerto el jugador
         if game_over==-1:
             if restart_button.draw(): # usuario hizo click en boton restart
-                player.reset(100, screen_height-200) # volvemos a reiniciar
+                level = 0 # hacemos que si muere vuelva a empezar desde el primer nivel
+                world_data = []
+                world = reset_level(level) # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
                 game_over = 0
+        
+        # jugador ha completado nivel
+        if game_over==1: 
+            level += 1
+            if level <= max_levels: # si hay siguiente nivel
+                # reset level
+                world_data = []
+                world = reset_level(level) # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
+                game_over = 0
+            else: 
+                # reiniciar el juego otra vez cuando se pasan todos los niveles
+                if restart_button.draw():
+                    level = 1
+                    world_data = []
+                    world = reset_level(level) # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
+                    game_over = 0
     
-    
+    # evento para cerrar la aplicacion del juego
     for event in pygame.event.get():
         if event.type==pygame.QUIT:
             run = False
