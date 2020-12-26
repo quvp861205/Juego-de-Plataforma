@@ -1,10 +1,14 @@
 import pygame
 from pygame.locals import *
+from pygame import mixer
 
 import pickle
 from os import path
 
+pygame.mixer.pre_init(44100, -16, 2, 512) # manejo del sonido
+mixer.init()  # manejo del sonido
 pygame.init()
+
 
 # limitar la cuadros por segundo
 clock = pygame.time.Clock()
@@ -43,6 +47,15 @@ restart_img = pygame.image.load('assets/restart_btn.png')  # reiniciar el juego
 start_img = pygame.image.load('assets/start_btn.png') # iniciar por primera vez
 exit_img = pygame.image.load('assets/exit_btn.png') # salir del juego
 
+# funcion para producir los sonidos
+pygame.mixer.music.load('assets/music.wav')
+pygame.mixer.music.play(-1, 0.0, 5000)
+coin_fx = pygame.mixer.Sound('assets/coin.wav')
+coin_fx.set_volume(0.5)
+jump_fx = pygame.mixer.Sound('assets/jump.wav')
+jump_fx.set_volume(0.5)
+gameover_fx = pygame.mixer.Sound('assets/game_over.wav')
+gameover_fx.set_volume(0.5)
 
 # funcion para pintal el score
 def draw_text( text, font, text_col, x, y):
@@ -113,6 +126,7 @@ class Player():
             #controlamos al jugador
             key = pygame.key.get_pressed()
             if key[pygame.K_SPACE] and self.jumped==False and self.in_air==False: # tecla espacio para salto, in_air evita que salte multiple veces
+                jump_fx.play()
                 self.vel_y = -15
                 self.jumped = True
             if key[pygame.K_SPACE]==False: # si no se esta presionando se puede volver a brinbcar
@@ -173,10 +187,12 @@ class Player():
             #verificar colision con enemigos
             if pygame.sprite.spritecollide(self, blob_group, False):
                 game_over = -1
+                gameover_fx.play()
             
             #verificar colision con lava
             if pygame.sprite.spritecollide(self, lava_group, False):
                 game_over = -1 
+                gameover_fx.play()
 
             #verificar colision con puerta de salida
             if pygame.sprite.spritecollide(self, exit_group, False):
@@ -450,6 +466,7 @@ while run==True:
             # veficamos colisiones con las monedas, si las hay, las destruye e incrementamos la puntuacion
             if pygame.sprite.spritecollide(player, coin_group, True):
                 score += 1
+                coin_fx.play()
             draw_text('X ' + str(score), font_score, white, tile_size-10, 10)
             
         # pintamos al grupo de enemigos
