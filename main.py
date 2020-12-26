@@ -20,12 +20,21 @@ game_over = 0 # marca si es gameover
 main_menu = True
 level = 0 # nivel al que vamos a jugar
 max_levels = 7
+score = 0 # puntuacion
 
 # creamos el objeto pantalla
 screen = pygame.display.set_mode((screen_width, screen_height))
 
 # inicializamos un titulo a la ventana
 pygame.display.set_caption('Platformer')
+
+# tipo de letra y color para la puntuacion
+font_score = pygame.font.SysFont('Bauhaus 93', 30)
+white = (255,255,255)
+
+# tipo de fuente para los mensajes del juego
+font = pygame.font.SysFont('Bauhaus 93', 70)
+blue = (0, 0, 255)
 
 # cargamos las imagenes del fondo de nubecitas y el sol
 sun_img = pygame.image.load('assets/sun.png')
@@ -34,6 +43,11 @@ restart_img = pygame.image.load('assets/restart_btn.png')  # reiniciar el juego
 start_img = pygame.image.load('assets/start_btn.png') # iniciar por primera vez
 exit_img = pygame.image.load('assets/exit_btn.png') # salir del juego
 
+
+# funcion para pintal el score
+def draw_text( text, font, text_col, x, y):
+    img = font.render(text, True, text_col)
+    screen.blit(img, (x, y))
 
 # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
 def reset_level(level):
@@ -276,6 +290,11 @@ class World():
                     lava = Lava(col_count*tile_size, row_count * tile_size+(tile_size//2))
                     lava_group.add(lava) #agregamos al grupo el bloque lava
                 
+                # si es 7 es bloque de moneda
+                if tile==7:
+                    coin = Coin(col_count*tile_size + (tile_size//2), row_count * tile_size+(tile_size//2) )
+                    coin_group.add(coin) #agregamos al grupo el bloque coin
+                    
                 # si es 8 entonces es una puerta de salida de la mision
                 if tile==8:
                     exit = Exit(col_count*tile_size, row_count * tile_size - (tile_size//2))
@@ -311,12 +330,22 @@ class Enemy(pygame.sprite.Sprite):
             self.move_direction *= -1  #cambiamos direccion
             self.move_counter *=  -1  
         
-
+# clase para la lava
 class Lava(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
         img = pygame.image.load('assets/lava.png')
         self.image = pygame.transform.scale(img, (tile_size, tile_size // 2))
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+
+
+# clase para las monedas
+class Coin(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        img = pygame.image.load('assets/coin.png')
+        self.image = pygame.transform.scale(img, (tile_size//2, tile_size // 2))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -360,11 +389,18 @@ world_data = [
 # grupo para lavas
 lava_group = pygame.sprite.Group()
 
+# grupo de puntos
+coin_group = pygame.sprite.Group()
+
 # creamos un arreglo para enemigos
 blob_group = pygame.sprite.Group()
 
 # creamos un grupo de puertas para pasar al siguiente mision
 exit_group = pygame.sprite.Group()
+
+# se agrega un a moneda a un lado del texto de la puntuacion
+score_coin = Coin(tile_size//2-10, tile_size//2)
+coin_group.add(score_coin)
 
 # Cargamos el nivel y creamos el mundo
 if path.exists(f'level{level}_data'):
@@ -410,11 +446,20 @@ while run==True:
             
         if game_over==0: # actualizamos enemigos si no hay game_over
             blob_group.update()
+            
+            # veficamos colisiones con las monedas, si las hay, las destruye e incrementamos la puntuacion
+            if pygame.sprite.spritecollide(player, coin_group, True):
+                score += 1
+            draw_text('X ' + str(score), font_score, white, tile_size-10, 10)
+            
         # pintamos al grupo de enemigos
         blob_group.draw(screen)
         
         # pintamos la lava
         lava_group.draw(screen)
+        
+        # pintamos las monedas
+        coin_group.draw(screen)
         
         # pintamos la puerta de salida de la mision
         exit_group.draw(screen)
@@ -425,11 +470,14 @@ while run==True:
            
          # si hay game_over ha muerto el jugador
         if game_over==-1:
+            draw_text('GAME OVER', font, blue, (screen_width//2)-200, screen_height//2)
             if restart_button.draw(): # usuario hizo click en boton restart
                 level = 0 # hacemos que si muere vuelva a empezar desde el primer nivel
                 world_data = []
                 world = reset_level(level) # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
                 game_over = 0
+                score = 0 # reiniciamos puntuacion
+                
         
         # jugador ha completado nivel
         if game_over==1: 
@@ -440,12 +488,14 @@ while run==True:
                 world = reset_level(level) # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
                 game_over = 0
             else: 
+                draw_text("TU HAZ GANADO", font, blue, (screen_width//2)-200, screen_height//2)
                 # reiniciar el juego otra vez cuando se pasan todos los niveles
                 if restart_button.draw():
                     level = 1
                     world_data = []
                     world = reset_level(level) # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
                     game_over = 0
+                    score = 0 # reiniciamos puntuacion ya que acabaron los niveles
     
     # evento para cerrar la aplicacion del juego
     for event in pygame.event.get():
