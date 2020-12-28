@@ -215,7 +215,7 @@ class Player():
         #pinta al jugador en pantalla
         screen.blit(self.image, self.rect)        
         #pone un marco blanco alrededor del monito
-        pygame.draw.rect(screen, (255,255,255), self.rect, 2)
+        #pygame.draw.rect(screen, (255,255,255), self.rect, 2)
         
         return game_over
         
@@ -257,9 +257,7 @@ class World():
         self.tile_list = []
     
         dirt_img = pygame.image.load('assets/dirt.png')
-        grass_img = pygame.image.load('assets/grass.png')
-        
-        
+        grass_img = pygame.image.load('assets/grass.png')     
         
         row_count = 0
         for row in data:
@@ -300,10 +298,21 @@ class World():
                 if tile==3:
                     blob = Enemy(col_count*tile_size, row_count * tile_size +5)
                     blob_group.add(blob) #agregamos al grupo el enemigo
-                    
+                
+                # si es 4 es bloque plataforma movil
+                if tile==4:
+                    platform = Platform(col_count*tile_size, row_count * tile_size, 1, 0)
+                    platform_group.add(platform)
+                
+                # si es 5 es bloque plataforma movil
+                if tile==5:
+                    platform = Platform(col_count*tile_size, row_count * tile_size, 0, 1)
+                    platform_group.add(platform) 
+                
+                
                  # si es 6 es bloque de lava
                 if tile==6:
-                    lava = Lava(col_count*tile_size, row_count * tile_size+(tile_size//2))
+                    lava = Lava(col_count*tile_size+20, row_count * tile_size+(tile_size))
                     lava_group.add(lava) #agregamos al grupo el bloque lava
                 
                 # si es 7 es bloque de moneda
@@ -324,7 +333,7 @@ class World():
         for tile in self.tile_list:
             screen.blit(tile[0], tile[1])
             #pone un marco blanco alrededor de cada bloque de colision
-            pygame.draw.rect(screen, (255,255,255), tile[1], 2)
+            # pygame.draw.rect(screen, (255,255,255), tile[1], 2)
             
             
 # clase para el comportamiento de los enemigos
@@ -345,6 +354,31 @@ class Enemy(pygame.sprite.Sprite):
         if abs(self.move_counter)>50: # cada 50 movimientos cambia direccion 
             self.move_direction *= -1  #cambiamos direccion
             self.move_counter *=  -1  
+
+# clase para la plataforma movil y fija
+class Platform(pygame.sprite.Sprite):
+    def __init__(self, x, y, move_x, move_y):
+        pygame.sprite.Sprite.__init__(self)
+        img = pygame.image.load('assets/platform.png')
+        self.image = pygame.transform.scale(img, (tile_size, tile_size // 2))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.move_counter = 0 # contador para limitar el movmiento
+        self.move_counter = 0 # contador para limitar el movmiento
+        self.move_direction = 1 # indica hacia que direccion se va mover
+        self.move_x = move_x # indica si se va mover horizontalmente
+        self.move_y = move_y # indica si se va mover verticalmente
+        
+    # actualizar comportamiento de la plataforma
+    def update(self):
+        self.rect.x += self.move_direction * self.move_x #movemos la plataforma horizontalmente 
+        self.rect.y += self.move_direction * self.move_y #movemos la plataforma verticalmente
+        self.move_counter += 1  #contamos que tanto se ha movido
+        if abs(self.move_counter)>50: # cada 50 movimientos cambia direccion 
+            self.move_direction *= -1  #cambiamos direccion
+            self.move_counter *=  -1
+        
         
 # clase para la lava
 class Lava(pygame.sprite.Sprite):
@@ -411,6 +445,10 @@ coin_group = pygame.sprite.Group()
 # creamos un arreglo para enemigos
 blob_group = pygame.sprite.Group()
 
+# creamos un arreglo para plataformas moviles
+platform_group = pygame.sprite.Group()
+
+
 # creamos un grupo de puertas para pasar al siguiente mision
 exit_group = pygame.sprite.Group()
 
@@ -460,8 +498,9 @@ while run==True:
         # pinta los bloques de tierra
         world.draw()
             
-        if game_over==0: # actualizamos enemigos si no hay game_over
-            blob_group.update()
+        if game_over==0: # actualizamos comportamientos cuando no haya gameover
+            blob_group.update() # actualizamos movimiento enemigos
+            platform_group.update() # actualiamos comportamiento plataformas
             
             # veficamos colisiones con las monedas, si las hay, las destruye e incrementamos la puntuacion
             if pygame.sprite.spritecollide(player, coin_group, True):
@@ -471,6 +510,9 @@ while run==True:
             
         # pintamos al grupo de enemigos
         blob_group.draw(screen)
+        
+        # pintamos el grupo de plataformas moviles
+        platform_group.draw(screen)
         
         # pintamos la lava
         lava_group.draw(screen)
