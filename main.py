@@ -66,8 +66,10 @@ def draw_text( text, font, text_col, x, y):
 def reset_level(level):
     player.reset(100, screen_height-200)
     blob_group.empty()
+    platform_group.empty()
     lava_group.empty()
     exit_group.empty()
+    coin_group.empty()
     
     if path.exists(f'level{level}_data'):
         pickle_in = open(f'level{level}_data', 'rb')
@@ -119,6 +121,7 @@ class Player():
         dx = 0 #desplazamiento en x
         dy = 0 #desplazamiento en y
         walk_cooldown = 5  # cada 5 ciclos va cambiar animacion el jugador
+        col_thresh = 20 # se utiliza para la colision con la plataforma
         
         # 0 es seguir jugando
         if game_over==0:
@@ -178,6 +181,7 @@ class Player():
                     if self.vel_y<0:
                         dy = tile[1].bottom - self.rect.top
                         self.vel_y = 0
+                        
                     #verificar si hay terreno en la parte de arriba cayendo
                     elif self.vel_y>=0:
                         dy = tile[1].top - self.rect.bottom
@@ -194,10 +198,39 @@ class Player():
                 game_over = -1 
                 gameover_fx.play()
 
-            #verificar colision con puerta de salida
+            #verificar colision con puertas de salida
             if pygame.sprite.spritecollide(self, exit_group, False):
-                game_over = 1 
+                game_over = 1 # pasa al siguiente nivel
+            
+            #verificar colision con plataformas
+            for platform in platform_group:
+                #colision en direccion x con plataforma
+                if platform.rect.colliderect(self.rect.x+dx, self.rect.y, self.width, self.height):
+                    dx = 0 # detenemos movimiento en x
                 
+                #colision en direccio y con plataforma
+                if platform.rect.colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
+                    #verficar si hay contacto debajo de la plataforma
+                    if abs(( self.rect.top + dy ) - platform.rect.bottom) < col_thresh:
+                        self.vel_y = 0 # le quita la velocidad del salto                        
+                        
+                        dy = platform.rect.bottom - self.rect.top + 1
+                        
+                        # valida que la plataforma no vaya aplastar al jugador en caso que baje mucho
+                        if platform.rect.bottom > (tile_size+self.height):
+                            dy = 0       
+                        
+                    #verificar si hay contacto arriba de la plataforma
+                    elif abs( (self.rect.bottom+dy) - platform.rect.top ) < col_thresh:
+                        self.rect.bottom = platform.rect.top - 1 #-1 para que no se atore en las esquinas de la plataforma
+                        dy = 0
+                        self.in_air = False
+                   
+                    #moverse junto con la plataforma
+                    if platform.move_x != 0: # moverse en el eje x
+                        self.rect.x += platform.move_direction
+                   
+                   
             #actualizar coordenadas de jugador
             self.rect.x += dx
             self.rect.y += dy
@@ -213,7 +246,8 @@ class Player():
                 self.rect.y -= 5 # subimos a fantasma
         
         #pinta al jugador en pantalla
-        screen.blit(self.image, self.rect)        
+        screen.blit(self.image, self.rect)      
+        
         #pone un marco blanco alrededor del monito
         #pygame.draw.rect(screen, (255,255,255), self.rect, 2)
         
@@ -464,8 +498,8 @@ world = World(world_data)
 
 # botones para el juego
 restart_button = Button(screen_width//2-50, screen_height//2+100, restart_img)
-start_button = Button(screen_width//2-350, screen_height//2+100, start_img)
-exit_button = Button(screen_width//2+150, screen_height//2+100, exit_img)
+start_button = Button(screen_width//2-300, screen_height//2+100, start_img)
+exit_button = Button(screen_width//2+50, screen_height//2+100, exit_img)
 
 
 # Creamos el objeto jugador
@@ -529,7 +563,7 @@ while run==True:
            
          # si hay game_over ha muerto el jugador
         if game_over==-1:
-            draw_text('GAME OVER', font, blue, (screen_width//2)-200, screen_height//2)
+            draw_text('GAME OVER', font, blue, (screen_width//2)-150, screen_height//2)
             if restart_button.draw(): # usuario hizo click en boton restart
                 level = 0 # hacemos que si muere vuelva a empezar desde el primer nivel
                 world_data = []
@@ -547,10 +581,10 @@ while run==True:
                 world = reset_level(level) # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
                 game_over = 0
             else: 
-                draw_text("TU HAZ GANADO", font, blue, (screen_width//2)-200, screen_height//2)
+                draw_text("¡¡¡ TU HAZ GANADO !!!", font, blue, (screen_width//2)-200, screen_height//2)
                 # reiniciar el juego otra vez cuando se pasan todos los niveles
                 if restart_button.draw():
-                    level = 1
+                    level = 0
                     world_data = []
                     world = reset_level(level) # permite inicializar un nivel incluye ambiente, enemigos, jugador, etc
                     game_over = 0
