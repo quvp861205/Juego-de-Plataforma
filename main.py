@@ -95,7 +95,7 @@ class Button():
         pos = pygame.mouse.get_pos()
         
         if self.rect.collidepoint(pos): # verificamos si esta sobre el boton
-            if pygame.mouse.get_pressed()[0]==1 and self.clicked==False: # verificamos si hace click izquierdo
+            if pygame.mouse.get_pressed()[0]==1 and self.clicked is False: # verificamos si hace click izquierdo
                 self.clicked = True
                 action = True
         
